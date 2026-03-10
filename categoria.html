@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos | TUZALUD</title>
+    
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="dns-prefetch" href="https://docs.google.com">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="top-bar">Bienvenidos a TUZALUD en donde tu salud es primero</div>
+        
+        <nav>
+            <a href="index.html" class="logo">
+                <img src="https://i.ibb.co/Gy4k01w/LOGO.png" alt="Logo TUZALUD">
+            </a>
+            
+            <div class="search-box">
+                <input type="text" id="busqueda" placeholder="Buscar producto..." autocomplete="off">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <div class="menu">
+                <a href="index.html">Inicio</a>
+                <a href="index.html#sucursales">Sucursales</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="contact-bar">Cotizaciones por mayoreo al 771 231 1859</div>
+
+    <h2 class="titulo" id="catTitle">CARGANDO...</h2>
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <select id="marcaFilter" style="padding: 10px 20px; border-radius: 20px; border: 2px solid #0e76b7; font-size: 14px; cursor: pointer;">
+            <option value="">Todas las marcas</option>
+        </select>
+    </div>
+
+    <div class="grid" id="productGrid"></div>
+
+    <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+        <h3 style="color: #666; font-size: 24px; margin-bottom: 10px;">😕 No se encontraron productos</h3>
+        <p style="color: #999;">Intenta con otra búsqueda o categoría</p>
+        <a href="index.html" style="display: inline-block; margin-top: 20px; padding: 12px 30px; background: #0e76b7; color: white; text-decoration: none; border-radius: 25px; font-weight: bold;">Volver al inicio</a>
+    </div>
+
+    <!-- MODAL ACTUALIZADO -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            <img id="modalImg" alt="Producto">
+            <div style="flex:1;">
+                <h2 id="modalNombre"></h2>
+                <p id="modalMarca" style="color:gray; margin-bottom:10px;"></p>
+                <p id="modalDesc"></p>
+                
+                <a id="modalWA" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                    COTIZAR WHATSAPP
+                </a>
+                
+                <a id="modalCatLink" href="#" class="btn-categoria">
+                    VER MÁS DE ESTA CATEGORÍA
+                </a>
+                
+                <!-- BOTÓN FICHA TÉCNICA -->
+                <a id="modalFicha" href="#" target="_blank" rel="noopener noreferrer" class="btn-ficha-tecnica" style="display: none;">
+                    DESCARGAR FICHA TÉCNICA
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="https://i.ibb.co/Gy4k01w/LOGO.png" alt="Logo TUZALUD" class="footer-logo">
+                <p class="footer-slogan">Tu salud es primero</p>
+            </div>
+            <div class="footer-section">
+                <h4>Síguenos</h4>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/ProveedoraTuzalud" target="_blank" rel="noopener noreferrer" class="social-btn facebook">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </a>
+                    <a href="https://www.instagram.com/tuzaludproveedora" target="_blank" rel="noopener noreferrer" class="social-btn instagram">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </a>
+                    <a href="https://www.tiktok.com/@tuzalud" target="_blank" rel="noopener noreferrer" class="social-btn tiktok">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>📞 771 231 1859</p>
+                <p>📧 ventas@tuzalud.com.mx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 TUZALUD. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/527712311859?text=Hola,%20me%20gustaría%20información%20sobre%20sus%20productos" class="whatsapp-float" target="_blank" rel="noopener noreferrer" title="WhatsApp">
+        <svg viewBox="0 0 24 24" class="whatsapp-icon"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+
+    <script src="config.js"></script>
+    <script>
+        let productosFiltrados = [];
+        let categoriaActual = '';
+
+        async function load() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                categoriaActual = params.get('id') || '';
+                
+                document.getElementById('catTitle').innerText = categoriaActual.toUpperCase().replace(/_/g, ' ');
+                
+                await obtenerProductos();
+                productosFiltrados = obtenerProductosPorCategoria(categoriaActual);
+                
+                if (productosFiltrados.length === 0) {
+                    mostrarEstadoVacio();
+                    return;
+                }
+
+                const marcas = [...new Set(productosFiltrados.map(p => p.marca))].sort();
+                const marcaSelect = document.getElementById('marcaFilter');
+                marcaSelect.innerHTML = '<option value="">Todas las marcas</option>' + 
+                    marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+                
+                renderizarProductos(productosFiltrados);
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+                mostrarEstadoVacio();
+            }
+        }
+
+        function renderizarProductos(productos) {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (productos.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'flex';
+            emptyState.style.display = 'none';
+
+            grid.innerHTML = productos.map(p => `
+                <div class="card ${p.destacado ? 'card-destacado' : ''}" onclick='abrirModal(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+                    ${p.destacado ? '<div class="badge-destacado">⭐ MÁS VENDIDO</div>' : ''}
+                    <img src="${p.img}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/200x150?text=${encodeURIComponent(p.nombre)}'">
+                    <h4>${p.nombre}</h4>
+                    <p style="color:gray;">${p.marca}</p>
+                </div>
+            `).join('');
+        }
+
+        function mostrarEstadoVacio() {
+            document.getElementById('productGrid').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        // FUNCIÓN ACTUALIZADA CON FICHA TÉCNICA
+        function abrirModal(p) {
+            document.getElementById('modalNombre').innerText = p.nombre;
+            document.getElementById('modalMarca').innerText = "Marca: " + p.marca;
+            document.getElementById('modalDesc').innerText = p.desc;
+            document.getElementById('modalImg').src = p.img;
+            
+            const mensajeWhatsApp = `Hola, me interesa: ${p.nombre}`;
+            document.getElementById('modalWA').href = `https://wa.me/527712311859?text=${encodeURIComponent(mensajeWhatsApp)}`;
+            
+            document.getElementById('modalCatLink').href = `categoria.html?id=${p.categoria.toLowerCase()}`;
+            
+            // ⭐ LÓGICA DE FICHA TÉCNICA
+            const btnFicha = document.getElementById('modalFicha');
+            if (p.fichaUrl && p.fichaUrl.trim() !== '') {
+                btnFicha.style.display = 'block';
+                btnFicha.href = p.fichaUrl;
+                console.log('✅ Ficha disponible:', p.nombre, '→', p.fichaUrl);
+            } else {
+                btnFicha.style.display = 'none';
+                console.log('ℹ️ Sin ficha:', p.nombre);
+            }
+            
+            document.getElementById('productModal').style.display = "flex";
+        }
+
+        function cerrarModal() {
+            document.getElementById('productModal').style.display = "none";
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') cerrarModal();
+        });
+
+        document.getElementById('productModal').addEventListener('click', (e) => {
+            if (e.target.id === 'productModal') cerrarModal();
+        });
+
+        document.getElementById('marcaFilter').addEventListener('change', (e) => {
+            const marca = e.target.value;
+            let productos = obtenerProductosPorCategoria(categoriaActual);
+            
+            if (marca) {
+                productos = productos.filter(p => p.marca === marca);
+            }
+            
+            renderizarProductos(productos);
+        });
+
+        const searchInput = document.getElementById('busqueda');
+        const searchResults = document.getElementById('searchResults');
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value;
+            
+            if (!term || term.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            buscarProducto(term, (resultados) => {
+                if (resultados.length === 0) {
+                    searchResults.innerHTML = '<div class="search-item">No se encontraron productos</div>';
+                    searchResults.style.display = 'block';
+                    return;
+                }
+
+                searchResults.innerHTML = resultados.slice(0, 5).map(p => `
+                    <div class="search-item" onclick='abrirModal(${JSON.stringify(p).replace(/'/g, "&apos;")}); searchResults.style.display="none"; searchInput.value="";'>
+                        <img src="${p.img}" alt="${p.nombre}">
+                        <div>
+                            <strong>${p.nombre}</strong>
+                            <small>${p.marca} - ${p.categoria}</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                searchResults.style.display = 'block';
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-box')) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        load();
+    </script>
+</body>
+</html>
