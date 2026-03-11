@@ -1,6 +1,6 @@
 /* ============================================
    CONFIG.JS - TUZALUD
-   Sistema simplificado - ficha_url en PRODUCTOS
+   Con detección automática de cambios
    ============================================ */
 
 const CONFIG = {
@@ -13,7 +13,8 @@ const CONFIG = {
     gidProductos: "0",
     gidBanners: "691969109",
     
-    tiempoCache: 30,
+    // ⭐ NUEVO: Caché de 5 minutos (suficiente para navegación, pero actualiza rápido)
+    tiempoCache: 5, // 5 minutos
     
     sucursales: [
         { nombre: "Sucursal ISSSTE", tel: "771 692 9925", wa: "7713622888", dir: "Río Lerma 213, ISSSTE, 42083, Pachuca de Soto, HGO", mapa: "https://maps.app.goo.gl/Z45QVNRcFvWzbgYG9" },
@@ -65,6 +66,18 @@ function parseCSV(text) {
     return lines;
 }
 
+// ⭐ NUEVO: Sistema de detección de cambios
+function calcularHashSimple(texto) {
+    // Genera un hash simple del contenido
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) {
+        const char = texto.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash.toString();
+}
+
 function esCacheValido(clave) {
     const cache = localStorage.getItem(clave);
     if (!cache) return false;
@@ -78,11 +91,12 @@ function esCacheValido(clave) {
     }
 }
 
-function guardarCache(clave, datos) {
+function guardarCache(clave, datos, hash) {
     try {
         localStorage.setItem(clave, JSON.stringify({
             timestamp: Date.now(),
-            data: datos
+            data: datos,
+            hash: hash // ⭐ NUEVO: Guardar hash para detectar cambios
         }));
     } catch (e) {
         console.warn('Error guardando caché:', e);
@@ -97,24 +111,38 @@ function obtenerCache(clave) {
     return null;
 }
 
+function obtenerHashCache(clave) {
+    try {
+        const cache = localStorage.getItem(clave);
+        if (cache) return JSON.parse(cache).hash;
+    } catch {}
+    return null;
+}
+
 async function obtenerBanners() {
     const CACHE_KEY = 'tuzalud_banners';
-    
-    if (esCacheValido(CACHE_KEY)) {
-        console.log('⚡ Banners desde caché');
-        return obtenerCache(CACHE_KEY);
-    }
     
     try {
         const res = await fetch(`${CONFIG.urlBase}gid=${CONFIG.gidBanners}&output=csv`);
         if (!res.ok) throw new Error('Error banners');
         
         const data = await res.text();
+        const hashActual = calcularHashSimple(data);
+        const hashCache = obtenerHashCache(CACHE_KEY);
+        
+        // ⭐ Si el hash cambió, ignorar caché
+        if (hashCache && hashCache !== hashActual) {
+            console.log('🔄 Banners actualizados detectados');
+        } else if (esCacheValido(CACHE_KEY) && hashCache === hashActual) {
+            console.log('⚡ Banners desde caché');
+            return obtenerCache(CACHE_KEY);
+        }
+        
         const filas = parseCSV(data);
         const banners = filas.slice(1).map(f => f[1]?.trim()).filter(url => url && url.length > 0);
         
         const resultado = banners.length > 0 ? banners : ["banners/banner1.png"];
-        guardarCache(CACHE_KEY, resultado);
+        guardarCache(CACHE_KEY, resultado, hashActual);
         console.log('✅ Banners cargados:', resultado.length);
         return resultado;
     } catch (e) {
@@ -131,19 +159,25 @@ async function obtenerProductos() {
         return PRODUCTOS_DATA;
     }
     
-    if (esCacheValido(CACHE_KEY)) {
-        const cache = obtenerCache(CACHE_KEY);
-        PRODUCTOS_DATA = cache.productos;
-        PRODUCTOS_DESTACADOS = cache.destacados;
-        console.log(`⚡ Productos desde caché: ${PRODUCTOS_DATA.length}`);
-        return PRODUCTOS_DATA;
-    }
-    
     try {
         const res = await fetch(`${CONFIG.urlBase}gid=${CONFIG.gidProductos}&output=csv`);
         if (!res.ok) throw new Error('Error productos');
         
         const data = await res.text();
+        const hashActual = calcularHashSimple(data);
+        const hashCache = obtenerHashCache(CACHE_KEY);
+        
+        // ⭐ Si el hash cambió, ignorar caché y recargar
+        if (hashCache && hashCache !== hashActual) {
+            console.log('🔄 Productos actualizados detectados - recargando...');
+        } else if (esCacheValido(CACHE_KEY) && hashCache === hashActual) {
+            const cache = obtenerCache(CACHE_KEY);
+            PRODUCTOS_DATA = cache.productos;
+            PRODUCTOS_DESTACADOS = cache.destacados;
+            console.log(`⚡ Productos desde caché: ${PRODUCTOS_DATA.length}`);
+            return PRODUCTOS_DATA;
+        }
+        
         const filas = parseCSV(data);
         
         console.log('📊 Procesando productos...');
@@ -165,7 +199,7 @@ async function obtenerProductos() {
                 };
                 
                 if (fichaUrl) {
-                    console.log(`📄 Producto con ficha: "${producto.nombre}" → ${fichaUrl.substring(0, 50)}...`);
+                    console.log(`📄 Producto con ficha: "${producto.nombre}"`);
                 }
                 
                 return producto;
@@ -178,7 +212,7 @@ async function obtenerProductos() {
         guardarCache(CACHE_KEY, {
             productos: PRODUCTOS_DATA,
             destacados: PRODUCTOS_DESTACADOS
-        });
+        }, hashActual);
         
         console.log(`✅ Productos cargados: ${PRODUCTOS_DATA.length}`);
         console.log(`✅ Destacados: ${PRODUCTOS_DESTACADOS.length}`);
@@ -244,8 +278,15 @@ function limpiarCache() {
     location.reload();
 }
 
+// ⭐ NUEVO: Función para forzar actualización
+async function forzarActualizacion() {
+    console.log('🔄 Forzando actualización...');
+    limpiarCache();
+}
+
 window.TUZALUD_DEBUG = {
     limpiarCache,
+    forzarActualizacion, // ⭐ NUEVO
     verCache: () => ({
         productos: obtenerCache('tuzalud_productos'),
         banners: obtenerCache('tuzalud_banners')
@@ -255,5 +296,5 @@ window.TUZALUD_DEBUG = {
     conFichas: () => PRODUCTOS_DATA.filter(p => p.fichaUrl)
 };
 
-console.log('💡 Usa TUZALUD_DEBUG.limpiarCache() para limpiar caché');
-console.log('💡 Usa TUZALUD_DEBUG.conFichas() para ver productos con ficha');
+console.log('💡 Sistema de caché inteligente activado (5 minutos)');
+console.log('💡 Los cambios en Google Sheets se detectan automáticamente');
